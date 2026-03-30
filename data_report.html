@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品数据分析报告</title>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        /* 全局平滑滚动 */
+        html {
+            scroll-behavior: smooth;
+        }
+        /* 全局科技风样式 - 蓝紫渐变背景 */
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", sans-serif;
+            background: linear-gradient(135deg, #f5f7ff 0%, #f0f0ff 100%);
+            color: #2d3748;
+            line-height: 1.8;
+            font-size: 16px;
+            min-height: 100vh;
+            display: flex;
+        }
+        /* 左侧固定目录栏 */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 260px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-right: 1px solid #e0e7ff;
+            padding: 30px 20px;
+            overflow-y: auto;
+            z-index: 99;
+            transition: all 0.3s ease;
+        }
+        /* 折叠后的侧边栏样式 */
+        .sidebar.collapsed {
+            width: 0;
+            padding: 0;
+            border: none;
+            overflow: hidden;
+        }
+        /* 折叠开关按钮 */
+        .toggle-btn {
+            position: fixed;
+            top: 20px;
+            left: 260px;
+            z-index: 100;
+            background: #4f46e5;
+            color: white;
+            border: none;
+            width: 36px;
+            height: 36px;
+            border-radius: 0 6px 6px 0;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: left 0.3s ease;
+            box-shadow: 0 2px 8px rgba(79,70,229,0.2);
+        }
+        .toggle-btn.collapsed {
+            left: 0;
+        }
+        .sidebar-title {
+            font-size: 18px;
+            font-weight: 700;
+            background: linear-gradient(90deg, #4f46e5, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #e0e7ff;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .sidebar-menu {
+            list-style: none;
+        }
+        .sidebar-menu li {
+            margin: 8px 0;
+        }
+        .sidebar-menu a {
+            text-decoration: none;
+            color: #4338ca;
+            font-size: 15px;
+            display: block;
+            padding: 6px 12px;
+            border-radius: 6px;
+            transition: all 0.3s ease;
+        }
+        .sidebar-menu a:hover {
+            background: linear-gradient(90deg, #e0e7ff, #f0e7ff);
+            color: #5b21b6;
+        }
+        .sidebar-menu .sub-item a {
+            padding-left: 24px;
+            font-size: 14px;
+            color: #5b21b6;
+        }
+        /* 子菜单折叠样式 */
+        .sub-menu {
+            display: none;
+        }
+        .sub-menu.show {
+            display: block;
+        }
+        .parent-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+        }
+        /* 主内容区域 */
+        .container {
+            flex: 1;
+            max-width: 1200px;
+            margin-left: 260px;
+            padding: 40px 20px;
+            transition: margin-left 0.3s ease;
+        }
+        .container.expanded {
+            margin-left: 0;
+        }
+        /* 标题 - 蓝紫渐变文字 */
+        .title-h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin: 24px 0 20px;
+            background: linear-gradient(90deg, #4f46e5, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            padding-bottom: 12px;
+            border-bottom: 2px solid #e0e7ff;
+            text-align: center;
+        }
+        .title-h2 {
+            font-size: 24px;
+            font-weight: 600;
+            margin: 28px 0 16px;
+            color: #4338ca;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .title-h2::before {
+            content: "■";
+            color: #8b5cf6;
+            font-size: 18px;
+        }
+        .title-h3 {
+            font-size: 20px;
+            font-weight: 600;
+            margin: 20px 0 12px;
+            color: #5b21b6;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        /* 段落 */
+        .paragraph {
+            margin: 12px 0;
+            font-weight: 400;
+            color: #374151;
+        }
+        /* 图片 */
+        .tech-image {
+            max-width: 85%;
+            margin: 24px auto;
+            display: block;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(79, 70, 229, 0.1);
+            border: 1px solid #e0e7ff;
+            transition: transform 0.3s ease;
+        }
+        .tech-image:hover {
+            transform: translateY(-2px);
+        }
+        /* 列表 */
+        .tech-list {
+            margin: 12px 0 12px 32px;
+            list-style: none;
+        }
+        .tech-list li {
+            position: relative;
+            margin: 10px 0;
+            padding-left: 8px;
+            color: #374151;
+        }
+        .tech-list li::before {
+            content: "→";
+            position: absolute;
+            left: -20px;
+            color: #8b5cf6;
+            font-weight: bold;
+        }
+        /* 分割线 - 渐变 */
+        .divider {
+            height: 2px;
+            background: linear-gradient(90deg, #e0e7ff, #8b5cf6, #e0e7ff);
+            margin: 40px 0;
+            border: 0;
+            opacity: 0.6;
+        }
+        /* 科技风卡片 */
+        .tech-card {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 16px 0;
+            box-shadow: 0 4px 15px rgba(79, 70, 229, 0.08);
+            border: 1px solid #e0e7ff;
+        }
+        /* 科技标签 - 蓝紫配色 */
+        .tech-tag {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-right: 8px;
+        }
+        .tag-a {
+            background: linear-gradient(90deg, #dbeafe, #e0e7ff);
+            color: #1d4ed8;
+        }
+        .tag-b {
+            background: linear-gradient(90deg, #e0e7ff, #f0e7ff);
+            color: #5b21b6;
+        }
+        .tag-c {
+            background: linear-gradient(90deg, #fef2f2, #fef3c7);
+            color: #dc2626;
+        }
+        /* 强调文字 */
+        strong {
+            color: #4f46e5;
+            font-weight: 600;
+        }
+        /* 移动端适配 */
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 0;
+                padding: 0;
+                border: none;
+                overflow: hidden;
+            }
+            .sidebar.active {
+                width: 260px;
+                padding: 30px 20px;
+                border-right: 1px solid #e0e7ff;
+            }
+            .toggle-btn {
+                left: 0;
+            }
+            .container {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 折叠开关按钮 -->
+    <button class="toggle-btn" id="toggleBtn">
+        <i class="fas fa-bars"></i>
+    </button>
+
+    <!-- 左侧固定目录栏 -->
+    <div class="sidebar" id="sidebar">
+        <h3 class="sidebar-title">📋 报告目录</h3>
+        <ul class="sidebar-menu">
+            <li>
+                <div class="parent-item" onclick="toggleSubMenu('saleSub')">
+                    <a href="#sale">🚀 销售分析</a>
+                    <i class="fas fa-chevron-down" style="color:#4f46e5;font-size:12px"></i>
+                </div>
+                <ul class="sub-menu" id="saleSub">
+                    <li class="sub-item"><a href="#abc">1. ABC商品分级分析</a></li>
+                    <li class="sub-item"><a href="#day">2. 日销售曲线分析</a></li>
+                </ul>
+            </li>
+            <li>
+                <div class="parent-item" onclick="toggleSubMenu('stockSub')">
+                    <a href="#stock">📈 库存分析</a>
+                    <i class="fas fa-chevron-down" style="color:#4f46e5;font-size:12px"></i>
+                </div>
+                <ul class="sub-menu" id="stockSub">
+                    <li class="sub-item"><a href="#stock-day">3. 全国/分仓可用天数对比</a></li>
+                    <li class="sub-item"><a href="#stock-status">4. 商品状态分析</a></li>
+                    <li class="sub-item"><a href="#stock-mark">5. 商品标记分析</a></li>
+                </ul>
+            </li>
+        </ul>
+    </div>
+
+    <!-- 主内容区域 -->
+    <div class="container" id="container">
+        <h1 class="title-h1">数据分析报告</h1>
+
+        <h2 class="title-h2" id="sale">🚀 销售分析</h2>
+        <h3 class="title-h3" id="abc">1.商品销售帕累托ABC分析</h3>
+        <p class="paragraph">🔴 核心结论 | 品类销量集中，根据abc法则，针对不同的商品采取不同的策略。</p>
+        <img src="https://picsum.photos/800/400?random=1" alt="商品销售帕累托ABC分析图" class="tech-image">
+        
+        <div class="tech-card">
+            <h3 class="title-h3" style="margin: 0 0 10px 0;">商品分级</h3>
+            <p class="paragraph"><span class="tech-tag tag-a">A类热销商品</span>：酵母小麻花，香辣玉米锅巴</p>
+            <p class="paragraph"><span class="tech-tag tag-b">B类常规商品</span>：芭乐干，冻干草莓</p>
+            <p class="paragraph"><span class="tech-tag tag-c">C类低效商品</span>：太妃糖玉米球，香酥莲子脆</p>
+        </div>
+
+        <h3 class="title-h3">💡 落地建议</h3>
+        <p class="paragraph"><strong>1. 热销商品—倾斜资源，放大优势</strong></p>
+        <ul class="tech-list">
+            <li>热销商品保障安全库存，避免断货</li>
+            <li>安排优质陈列位，搭配搭配满减 / 组合套餐提升连带率</li>
+        </ul>
+        <p class="paragraph"><strong>2. 低效商品—优化淘汰，提升效率</strong></p>
+        <ul class="tech-list">
+            <li>跟踪评估，调整商品口味/适合场景</li>
+        </ul>
+
+        <hr class="divider">
+
+        <h3 class="title-h3" id="day">2.日销售曲线</h3>
+        <p class="paragraph">🔴 核心结论 | 商品在 7 月 12 日同步冲高，复盘活动内容。</p>
+        <p class="paragraph">A 类商品承接流量能力显著更强，该峰值可作为后续活动的参考模板。</p>
+        
+        <img src="https://picsum.photos/800/400?random=2" alt="冻干草莓销售趋势" class="tech-image">
+        <img src="https://picsum.photos/800/400?random=3" alt="香辣玉米锅巴销售趋势" class="tech-image">
+        <img src="https://picsum.photos/800/400?random=4" alt="日销售数据图" class="tech-image">
+        <img src="https://picsum.photos/800/400?random=5" alt="太妃糖味玉米球销售趋势" class="tech-image">
+        <img src="https://picsum.photos/800/400?random=6" alt="芭乐干销售趋势" class="tech-image">
+
+        <h3 class="title-h3">💡 落地建议</h3>
+        <p class="paragraph"><strong>1. 营销复用</strong></p>
+        <ul class="tech-list">
+            <li>复盘 7 月 12 日的流量来源与活动玩法，固化为周期性小促（如每双周 1 次）。</li>
+            <li>重点倾斜酵母小麻花、香辣玉米锅巴，持续放大峰值效应。</li>
+        </ul>
+        <p class="paragraph"><strong>2. 库存保障</strong></p>
+        <ul class="tech-list">
+            <li>按「日销均值 + 30% 峰值波动」设置安全库存，避免断货</li>
+        </ul>
+        <p class="paragraph"><strong>3. 新品引入</strong></p>
+        <ul class="tech-list">
+            <li>优先匹配 A 类商品的口味 / 场景（如咸味零食、果干类），提升新品成功率</li>
+        </ul>
+
+        <hr class="divider">
+
+        <h2 class="title-h2" id="stock">📈 库存分析</h2>
+        <h3 class="title-h3" id="stock-day">3.全国/分仓可用天数VS标准天数对比</h3>
+        <p class="paragraph">🔴 核心结论 | 不同商品补货压力不同，存在不同程度的补货压力，需进行分级补货。</p>
+        <p class="paragraph">库存资源集中，大部分库存聚集在总仓，其余分仓低于正常水平，应尽快安排调拨</p>
+        
+        <img src="https://picsum.photos/800/400?random=7" alt="商品可用天数对比图" class="tech-image">
+        <img src="https://picsum.photos/800/400?random=8" alt="香辣玉米锅巴仓可用天数" class="tech-image">
+        <img src="https://picsum.photos/800/400?random=9" alt="酵母小麻花仓可用天数" class="tech-image">
+        <img src="https://picsum.photos/800/400?random=10" alt="芭乐干仓可用天数" class="tech-image">
+        <img src="https://picsum.photos/800/400?random=11" alt="冻干草莓仓库可用天数&全国可用天数" class="tech-image">
+
+        <h3 class="title-h3">💡 落地建议</h3>
+        <p class="paragraph"><strong>1. 采购补货</strong></p>
+        <ul class="tech-list">
+            <li>酵母小麻花：结合采购 / 在途库存，确认到货时效</li>
+            <li>香辣玉米锅巴：优先处理临期，后进行补货</li>
+            <li>冻干草莓：维持现有节奏</li>
+            <li>芭乐干:库存天数不足，进行批量紧急补货</li>
+        </ul>
+        <p class="paragraph"><strong>2. 调拨均仓</strong></p>
+        <ul class="tech-list">
+            <li>冻干草莓 / 芭乐干：利用阜阳 / 上海高库存大仓，向低天数告急仓做跨仓调拨。</li>
+        </ul>
+
+        <hr class="divider">
+
+        <h3 class="title-h3" id="stock-status">4.商品状态分析</h3>
+        <p class="paragraph">🔴 核心结论 | 商品库存分化明显。</p>
+        <p class="paragraph">结合产品的销售情况和库存状态，进一步采取运营策略。</p>
+        
+        <img src="https://picsum.photos/800/200?random=12" alt="酵母小麻花库存状态分布" class="tech-image">
+        <img src="https://picsum.photos/800/200?random=13" alt="板栗牛肉库存状态分布" class="tech-image">
+        <img src="https://picsum.photos/800/200?random=14" alt="太妃糖味玉米球库存状态分布" class="tech-image">
+        <img src="https://picsum.photos/800/200?random=15" alt="冻干芒果库存状态分布" class="tech-image">
+        <img src="https://picsum.photos/800/200?random=16" alt="冻干草莓库存状态分布" class="tech-image">
+        <img src="https://picsum.photos/800/200?random=17" alt="芭乐干库存状态分布" class="tech-image">
+        <img src="https://picsum.photos/800/200?random=18" alt="香辣玉米锅巴库存状态分布" class="tech-image">
+
+        <h3 class="title-h3">💡 落地建议</h3>
+        <p class="paragraph"><strong>1.重点商品</strong></p>
+        <p class="paragraph"><strong>酵母小麻花 / 冻干草莓</strong></p>
+        <ul class="tech-list">
+            <li>维持现有库存策略，按「日销均值 + 30% 峰值波动」设置安全库存，保障 7-10 天周转。</li>
+            <li>加大营销倾斜，复用 7 月 12 日峰值活动模板，放大销量，利用健康库存承接流量。</li>
+        </ul>
+        <p class="paragraph"><strong>芭乐干</strong></p>
+        <ul class="tech-list">
+            <li>针对临期仓（合肥、北京、阜阳、汕头、成都）做区域定向清仓：发放区域专属满减券。</li>
+            <li>搭配冻干草莓做果干组合装，加速临期库存周转。</li>
+        </ul>
+        <p class="paragraph"><strong>香辣玉米锅巴</strong></p>
+        <ul class="tech-list">
+            <li>设置分渠道清仓策略，线下临期商品5 折起，线上参与美团特价团专区。</li>
+        </ul>
+
+        <p class="paragraph"><strong>2.低效商品</strong></p>
+        <p class="paragraph"><strong>太妃糖味玉米球</strong></p>
+        <ul class="tech-list">
+            <li>按合规要求处理过期库存（北京、上海仓），启动报损 / 销毁流程，避免合规风险。</li>
+            <li>临期库存立即清仓（9.9 元秒杀、捆绑 A 类商品销售）</li>
+        </ul>
+
+        <p class="paragraph"><strong>3.新品筹备</strong></p>
+        <p class="paragraph"><strong>冻干芒果</strong></p>
+        <ul class="tech-list">
+            <li>作为果干类新品，小批量试销，搭配冻干草莓、芭乐干做「果干组合」推广，利用健康库存培育新增长点。</li>
+        </ul>
+
+        <hr class="divider">
+
+        <h3 class="title-h3" id="stock-mark">5.商品标记分析</h3>
+        <p class="paragraph">🔴 核心结论 | 热销商品存处于大规模补货或调拨周期，可快速承接销售。</p>
+        <p class="paragraph">稳定商品冻干草莓、芭乐干全可用库存深度足。</p>
+        
+        <img src="https://picsum.photos/800/400?random=19" alt="香辣玉米锅巴各仓库标记占比分布" class="tech-image">
+        <img src="https://picsum.photos/800/400?random=20" alt="酵母小麻花各仓库标记占比分布" class="tech-image">
+        <img src="https://picsum.photos/800/400?random=21" alt="太妃糖味玉米球各仓库标记占比分布" class="tech-image">
+        <img src="https://picsum.photos/800/400?random=22" alt="冻干芒果各仓库标记占比分布" class="tech-image">
+
+        <h3 class="title-h3">💡 落地建议</h3>
+        <p class="paragraph"><strong>1.重点商品</strong></p>
+        <p class="paragraph"><strong>香辣玉米锅巴，酵母小麻花</strong></p>
+        <ul class="tech-list">
+            <li>紧盯全仓在途进度，确保在途库存按时落地，避免销售断档。</li>
+        </ul>
+        <p class="paragraph"><strong>2.低效商品</strong></p>
+        <p class="paragraph"><strong>太妃糖味玉米球</strong></p>
+        <ul class="tech-list">
+            <li>因存在临期仓，在途到货后优先发往非临期区域，隔离风险。</li>
+    </div>
+
+    <script>
+        // 全局目录折叠/展开
+        const toggleBtn = document.getElementById('toggleBtn');
+        const sidebar = document.getElementById('sidebar');
+        const container = document.getElementById('container');
+        
+        toggleBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('collapsed');
+            toggleBtn.classList.toggle('collapsed');
+            container.classList.toggle('expanded');
+            
+            // 切换图标
+            const icon = toggleBtn.querySelector('i');
+            icon.classList.toggle('fa-bars');
+            icon.classList.toggle('fa-times');
+        });
+
+        // 子菜单折叠/展开
+        function toggleSubMenu(id) {
+            const subMenu = document.getElementById(id);
+            subMenu.classList.toggle('show');
+        }
+
+        // 默认展开子菜单
+        document.getElementById('saleSub').classList.add('show');
+        document.getElementById('stockSub').classList.add('show');
+    </script>
+</body>
+</html>
